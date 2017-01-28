@@ -43,38 +43,21 @@ object State {
   }
 }
 
+case class SimulationState(machine: CandyMachine, recordedInputs: List[Input])
+
 object Simulation {
-  def transitionMachine(input: Input)(f: CandyMachine => CandyMachine): State[Simulation, Unit] =
-    State.modify(s => s.copy(
-      machine = f(s.machine),
-      recordedInputs = s.recordedInputs :+ input
+  def transitionMachine(input: Input)(f: (Input, CandyMachine) => CandyMachine): State[SimulationState, Unit] =
+    State.modify(oldS => SimulationState(
+      f(input, oldS.machine),
+      oldS.recordedInputs :+ input
     ))
 
-  def summarizeMachine: State[Simulation, (Int, Int)] =
-    State.get[Simulation].map(s => (s.machine.candies, s.machine.coins))
+  def processSingleInput(input: Input): State[SimulationState, Unit] =
+    transitionMachine(input)(CandyMachine.processInput _)
 
-  def simulateMachine(inputs: Seq[Input]): State[Simulation, (Int, Int)] = {
-    def singleTransition(input: Input): State[Simulation, Unit] = {
-      input match {
-        case Coin => Simulation.transitionMachine(input) {
-          (m: CandyMachine) =>
-            if (m.locked && m.candies > 0) m.copy(locked = false, coins = m.coins + 1)
-            else m
-        }
-        case Turn => Simulation.transitionMachine(input) {
-          (m: CandyMachine) =>
-            if (m.locked) m
-            else m.copy(candies = m.candies - 1, locked = true)
-        }
-      }
-    }
-
-    val endS = State.sequence(inputs.map(singleTransition))
-
-    for {
-      _ <- endS
-      summary <- Simulation.summarizeMachine
-    } yield summary
-  }
+  def create(inputs: Seq[Input]): State[SimulationState, (Int, Int)] = for {
+    _ <- State.sequence(inputs.map(processSingleInput))
+    endState <- State.get[SimulationState]
+  } yield (endState.machine.candies, endState.machine.coins)
 
 }
