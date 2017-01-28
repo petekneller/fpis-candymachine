@@ -2,7 +2,7 @@ package candymachine.ubermonad
 
 import candymachine._
 
-class CandyMachineTest extends candymachine.CandyMachineTest {
+class UberMonadTest extends candymachine.CandyMachineTest {
 
   def runSimulation(inputs: Seq[Input], initialState: CandyMachine): (Int, Int, CandyMachine) = {
     val simulation = Simulation.create(inputs)
