@@ -46,19 +46,22 @@ object StateWriter {
 }
 
 object Simulation {
-  def transitionMachine(input: Input)(f: (Input, CandyMachine) => CandyMachine): StateWriter[CandyMachine, Input, Unit] = for {
-    oldS <- StateWriter.get[CandyMachine, Input]
-    newS = f(input, oldS)
-    _ <- StateWriter.set(newS)
-    _ <- StateWriter.write(input)
-  } yield ()
 
-  def processSingleInput(input: Input): StateWriter[CandyMachine, Input, Unit] =
-    transitionMachine(input)(CandyMachine.processInput _)
+  def create(inputs: Seq[Input]): StateWriter[CandyMachine, Input, (Int, Int)] = {
 
-  def create(inputs: Seq[Input]): StateWriter[CandyMachine, Input, (Int, Int)] = for {
-    _ <- StateWriter.sequence(inputs.map(processSingleInput))
-    endState <- StateWriter.get[CandyMachine, Input]
-  } yield (endState.candies, endState.coins)
+    val transitions: Seq[StateWriter[CandyMachine, Input, Unit]] = inputs.map{ input =>
+      for {
+        oldS <- StateWriter.get[CandyMachine, Input]
+        newS = CandyMachine.processInput(input, oldS)
+        _ <- StateWriter.set(newS)
+        _ <- StateWriter.write(input)
+      } yield ()
+    }
+
+    for {
+      _ <- StateWriter.sequence(transitions)
+      endState <- StateWriter.get[CandyMachine, Input]
+    } yield (endState.candies, endState.coins)
+  }
 
 }
