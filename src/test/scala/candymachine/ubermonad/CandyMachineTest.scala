@@ -6,7 +6,7 @@ class CandyMachineTest extends candymachine.CandyMachineTest {
 
   def runSimulation(inputs: Seq[Input], initialState: CandyMachine): (Int, Int, CandyMachine) = {
     val simulation = Simulation.create(inputs)
-    val ((candies, coins), SimulationState(endMachine, recordedInputs)) = simulation.run(SimulationState(initialState, Nil))
+    val ((candies, coins), endMachine, recordedInputs) = simulation.run(initialState, Seq.empty)
     Predef.assert(recordedInputs != Nil)
     (candies, coins, endMachine)
   }

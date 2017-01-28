@@ -2,62 +2,63 @@ package candymachine.ubermonad
 
 import candymachine._
 
-case class State[S, +A](run: S => (A, S)) {
+case class StateWriter[S, W, +A](run: (S, Seq[W]) => (A, S, Seq[W])) {
 
-  def map[B](f: A => B): State[S, B] = State {
-    s =>
-      val (a, s2) = run(s)
+  def map[B](f: A => B): StateWriter[S, W, B] = StateWriter {
+    (s, w) =>
+      val (a, s2, w2) = run(s, w)
       val b = f(a)
-      (b, s2)
+      (b, s2, w2)
   }
 
-  def flatMap[B](f: A => State[S, B]): State[S, B] = State {
-    s =>
-      val (a, s2) = run(s)
-      f(a).run(s2)
+  def flatMap[B](f: A => StateWriter[S, W, B]): StateWriter[S, W, B] = StateWriter {
+    (s, w) =>
+      val (a, s2, w2) = run(s, w)
+      f(a).run(s2, w2)
   }
 }
 
-object State {
-  def unit[S, A](a: A): State[S, A] = State(s => (a, s))
+object StateWriter {
+  def unit[S, W, A](a: A): StateWriter[S, W, A] = StateWriter((s, w) => (a, s, w))
 
-  def get[S]: State[S, S] = State(s => (s, s))
+  def get[S, W]: StateWriter[S, W, S] = StateWriter((s, w) => (s, s, w))
 
-  def set[A](s: A): State[A, Unit] = State(_ => ((), s))
+  def set[S, W](s: S): StateWriter[S, W, Unit] = StateWriter((_, w) => ((), s, w))
 
-  def modify[S](f: S => S): State[S, Unit] = for {
-    oldS <- State.get[S]
+  def modify[S, W](f: S => S): StateWriter[S, W, Unit] = for {
+    oldS <- StateWriter.get[S, W]
     newS = f(oldS)
-    _ <- State.set(newS)
+    _ <- StateWriter.set(newS)
   } yield ()
 
-  def map2[S, A, B, C](sa: State[S, A], sb: State[S, B])(f: (A, B) => C): State[S, C] = State {
-    (s: S) =>
-      val (a, s2) = sa.run(s)
-      val (b, s3) = sb.run(s2)
-      (f(a, b), s3)
+  def write[S, W](entry: W): StateWriter[S, W, Unit] = StateWriter { (s, w) => ((), s, w :+ entry) }
+
+  def map2[S, W, A, B, C](sa: StateWriter[S, W, A], sb: StateWriter[S, W, B])(f: (A, B) => C): StateWriter[S, W, C] = StateWriter {
+    (s, w) =>
+      val (a, s2, w2) = sa.run(s, w)
+      val (b, s3, w3) = sb.run(s2, w2)
+      (f(a, b), s3, w3)
   }
 
-  def sequence[S, A](fs: Seq[State[S, A]]): State[S, Seq[A]] = {
-    fs.foldLeft(unit[S, Seq[A]](Nil))((acc: State[S, Seq[A]], f: State[S, A]) => map2(acc, f)(_ :+ _))
+  def sequence[S, W, A](fs: Seq[StateWriter[S, W, A]]): StateWriter[S, W, Seq[A]] = {
+    fs.foldLeft(unit[S, W, Seq[A]](Nil))((acc: StateWriter[S, W, Seq[A]], f: StateWriter[S, W, A]) => map2(acc, f)(_ :+ _))
   }
 }
 
-case class SimulationState(machine: CandyMachine, recordedInputs: List[Input])
-
 object Simulation {
-  def transitionMachine(input: Input)(f: (Input, CandyMachine) => CandyMachine): State[SimulationState, Unit] =
-    State.modify(oldS => SimulationState(
-      f(input, oldS.machine),
-      oldS.recordedInputs :+ input
-    ))
+  def transitionMachine(input: Input)(f: (Input, CandyMachine) => CandyMachine): StateWriter[CandyMachine, Input, Unit] = for {
+    oldS <- StateWriter.get[CandyMachine, Input]
+    newS = f(input, oldS)
+    _ <- StateWriter.set(newS)
+    _ <- StateWriter.write(input)
+  } yield ()
 
-  def processSingleInput(input: Input): State[SimulationState, Unit] =
+  def processSingleInput(input: Input): StateWriter[CandyMachine, Input, Unit] =
     transitionMachine(input)(CandyMachine.processInput _)
 
-  def create(inputs: Seq[Input]): State[SimulationState, (Int, Int)] = for {
-    _ <- State.sequence(inputs.map(processSingleInput))
-    endState <- State.get[SimulationState]
-  } yield (endState.machine.candies, endState.machine.coins)
+  def create(inputs: Seq[Input]): StateWriter[CandyMachine, Input, (Int, Int)] = for {
+    _ <- StateWriter.sequence(inputs.map(processSingleInput))
+    endState <- StateWriter.get[CandyMachine, Input]
+  } yield (endState.candies, endState.coins)
 
 }
