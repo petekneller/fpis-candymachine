@@ -4,6 +4,6 @@ sealed trait Input
 case object Coin extends Input
 case object Turn extends Input
 
-case class Machine(locked: Boolean, candies: Int, coins: Int)
+case class CandyMachine(locked: Boolean, candies: Int, coins: Int)
 
-case class Simulation(machine: Machine, recordedInputs: List[Input])
+case class Simulation(machine: CandyMachine, recordedInputs: List[Input])
