@@ -25,3 +25,5 @@ scalacOptions ++= Seq(
 )
 
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.1" % "test"
+
+addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.3")

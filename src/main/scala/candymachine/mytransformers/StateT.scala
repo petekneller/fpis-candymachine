@@ -20,7 +20,7 @@ trait StateMonad[S, M[_]] extends MonadOps[M] {
   }
 }
 
-class StateTOps[S, M[_]](innerOps: MonadOps[M]) extends StateMonad[S, ({ type L[X] = StateT[S, M, X] })#L] with MonadTrans[M, ({ type L[X] = StateT[S, M, X] })#L] {
+class StateTOps[S, M[_]](innerOps: MonadOps[M]) extends StateMonad[S, StateT[S, M, ?]] with MonadTrans[M, StateT[S, M, ?]] {
   self =>
 
   /*  MonadOps */
@@ -48,7 +48,7 @@ class StateTOps[S, M[_]](innerOps: MonadOps[M]) extends StateMonad[S, ({ type L[
       imb
   }
 
-  implicit def monadImplicit[A](m: StateT[S, M, A]): Monad[({ type L[X] = StateT[S, M, X] })#L, A] = new Monad[({ type L[X] = StateT[S, M, X] })#L, A] {
+  implicit def monadImplicit[A](m: StateT[S, M, A]): Monad[StateT[S, M, ?], A] = new Monad[StateT[S, M, ?], A] {
     override def map[B](f: (A) => B): StateT[S, M, B] = self.map(m)(f)
     override def flatMap[B](f: (A) => StateT[S, M, B]): StateT[S, M, B] = self.flatMap(m)(f)
   }

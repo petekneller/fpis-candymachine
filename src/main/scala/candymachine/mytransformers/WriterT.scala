@@ -7,7 +7,7 @@ trait WriterMonad[W, M[_]] extends MonadOps[M] {
   def write(w: W): M[Unit]
 }
 
-class WriterTOps[W, M[_]](innerOps: MonadOps[M]) extends WriterMonad[W, ({ type L[X] = WriterT[W, M, X] })#L] with MonadTrans[M, ({ type L[X] = WriterT[W, M, X] })#L] {
+class WriterTOps[W, M[_]](innerOps: MonadOps[M]) extends WriterMonad[W, WriterT[W, M, ?]] with MonadTrans[M, WriterT[W, M, ?]] {
   self =>
 
   /* MonadOps */
@@ -27,7 +27,7 @@ class WriterTOps[W, M[_]](innerOps: MonadOps[M]) extends WriterMonad[W, ({ type 
 
   def map[A, B](m: WriterT[W, M, A])(f: (A) => B): WriterT[W, M, B] = flatMap(m)(a => unit(f(a)))
 
-  implicit def monadImplicit[A](m: WriterT[W, M, A]): Monad[({type L[X] = WriterT[W, M, X]})#L, A] = new Monad[({type L[X] = WriterT[W, M, X]})#L, A] {
+  implicit def monadImplicit[A](m: WriterT[W, M, A]): Monad[WriterT[W, M, ?], A] = new Monad[WriterT[W, M, ?], A] {
     override def map[B](f: (A) => B): WriterT[W, M, B] = self.map(m)(f)
     override def flatMap[B](f: (A) => WriterT[W, M, B]): WriterT[W, M, B] = self.flatMap(m)(f)
   }
