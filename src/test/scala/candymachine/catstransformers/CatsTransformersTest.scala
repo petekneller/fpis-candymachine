@@ -10,7 +10,7 @@ class CatsTransformersTest extends CandyMachineTest {
 
   def runSimulation(inputs: Seq[Input], initialState: CandyMachine): (Int, Int, CandyMachine) = {
     val simulation = Simulation.create(inputs)
-    val (_, (Simulation.Simulation(endMachine, recordedInputs), (candies, coins))) = simulation.run(Simulation.Simulation(initialState, Nil))(FlatMap[WriterT[Eval, List[Input], ?]]).run.value
+    val (recordedInputs, (endMachine, (candies, coins))) = simulation.run(initialState)(FlatMap[WriterT[Eval, List[Input], ?]]).run.value
     Predef.assert(recordedInputs != Nil)
     (candies, coins, endMachine)
   }
