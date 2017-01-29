@@ -24,6 +24,8 @@ scalacOptions ++= Seq(
   "-Ywarn-unused-import"     // 2.11 only
 )
 
+addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.3")
+
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.1" % "test"
 
-addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.3")
+libraryDependencies += "org.scalaz" %% "scalaz-core" % "7.2.8"
