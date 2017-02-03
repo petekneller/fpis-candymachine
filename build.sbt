@@ -31,3 +31,5 @@ libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.1" % "test"
 libraryDependencies += "org.scalaz" %% "scalaz-core" % "7.2.8"
 
 libraryDependencies += "org.typelevel" %% "cats" % "0.9.0"
+
+libraryDependencies += "org.atnos" %% "eff" % "2.2.0"
